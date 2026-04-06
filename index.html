@@ -28,8 +28,8 @@ button,.file-label{border:0;border-radius:999px;padding:10px 16px;font-size:15px
 .prompt.active{border-color:var(--blue)}.prompt.good{background:#e9f9ef;border-color:#8ad4a0}.prompt.bad{background:#fff0ed;border-color:#f2a39a}
 .row-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
 .row-title{font-size:18px;font-weight:800}.status-pill{font-size:13px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#475467;min-width:92px;text-align:center}
-.letters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
-.char{width:42px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;background:#fff;box-shadow:inset 0 0 0 2px #e6ebf5}
+.letters{display:flex;flex-wrap:wrap;gap:clamp(4px,1.6vw,8px);align-items:center;justify-content:center;width:100%}
+.char{width:clamp(28px,8.6vw,42px);height:clamp(34px,9.6vw,48px);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,5.2vw,26px);font-weight:800;background:#fff;box-shadow:inset 0 0 0 2px #e6ebf5;flex:0 0 auto}
 .char.fixed{background:#f9fafb;color:#344054}.char.blank{background:#fffdf3;border:3px dashed #f3cf62;box-shadow:none}.char.blank.filled{background:#fff;border:3px solid #7ec8ff}.char.slash{width:20px;background:transparent;box-shadow:none}
 .message{min-height:70px;border-radius:20px;padding:14px 16px;background:#fffdf2;color:#694d00;font-weight:700;line-height:1.35;margin-top:14px}
 .bottom-tools{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
@@ -46,11 +46,11 @@ button,.file-label{border:0;border-radius:999px;padding:10px 16px;font-size:15px
 .red{color:var(--red)}.green{color:var(--green)}
 .study-note{margin-top:14px;font-size:13px;color:var(--muted)}
 
-.mobile-input-wrap{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.mobile-input{flex:1;min-width:220px;padding:14px 16px;border-radius:16px;border:2px solid #dbe5f3;font-size:18px;background:#fff}
-.mobile-input-btn{border:0;border-radius:999px;padding:12px 16px;font-size:15px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff}
+.mobile-input-wrap{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mobile-input{position:absolute;left:-9999px;opacity:0;width:1px;height:1px;pointer-events:none}
+.mobile-input-note{width:100%;text-align:center;font-size:14px;color:var(--muted);background:#f7fbff;border-radius:14px;padding:10px 12px}
 
-@media (max-width:900px){.grid{grid-template-columns:1fr}.keyboard{grid-template-columns:repeat(5,1fr)}.mode-wrap{flex-direction:column;align-items:flex-start}}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.keyboard{grid-template-columns:repeat(5,1fr)}.mode-wrap{flex-direction:column;align-items:flex-start}.card{padding:16px}.play-buttons{gap:8px}.play-buttons button,.bottom-tools button,.bottom-tools .file-label{width:100%;justify-content:center}.base .word{font-size:clamp(28px,10vw,48px)}}
 </style>
 </head>
 <body>
@@ -96,7 +96,7 @@ button,.file-label{border:0;border-radius:999px;padding:10px 16px;font-size:15px
         <div class="letters" id="ppLetters"></div>
       </div>
 
-      <div class="message" id="messageBox">Toca el cuadro de abajo para escribir las letras.</div>
+      <div class="message" id="messageBox">Toca cualquier parte del juego para escribir.</div>
 
       <div class="mobile-input-wrap" id="mobileInputWrap">
         <input
@@ -109,10 +109,9 @@ button,.file-label{border:0;border-radius:999px;padding:10px 16px;font-size:15px
           autocomplete="off"
           spellcheck="false"
           maxlength="1"
-          placeholder="Toca aquí para que salga el teclado"
           aria-label="Escribe una letra"
         />
-        <button class="mobile-input-btn" id="focusKeyboardBtn" type="button">Abrir teclado</button>
+        <div class="mobile-input-note">Toca cualquier parte del juego para abrir el teclado.</div>
       </div>
 
 
@@ -397,19 +396,13 @@ function insertLetter(letter){
     return;
   }
 
-  let target = activeTarget;
-  let st = item.state[target];
-  let idx = nextBlankIndex(st);
+  const target = activeTarget;
+  const st = item.state[target];
+  const idx = nextBlankIndex(st);
 
   if(idx === -1){
-    const other = target === "pastSimple" ? "pastParticiple" : "pastSimple";
-    const os = item.state[other];
-    const oi = nextBlankIndex(os);
-    if(oi === -1) return;
-    target = other;
-    st = os;
-    idx = oi;
-    setActive(target);
+    setMessage("Ese verbo ya está completo. Toca el otro para seguir.");
+    return;
   }
 
   st.guessed[idx] = letter;
@@ -425,13 +418,12 @@ function insertLetter(letter){
     scoreStateIfNeeded(item, target, ok);
 
     if(ok){
-      setMessage("✅ Bien.");
       const other = target === "pastSimple" ? "pastParticiple" : "pastSimple";
-      if(item.state[other].ok === null){
-        setActive(other);
-      }
-      if(item.state.pastSimple.ok === true && item.state.pastParticiple.ok === true){
+      if(item.state[other].ok === true){
         item.meta.finished = true;
+        setMessage("✅ Bien. Los dos verbos están completos.");
+      } else {
+        setMessage("✅ Bien. Toca el otro verbo cuando quieras.");
       }
     } else {
       item.meta.finished = true;
@@ -488,6 +480,7 @@ function restartVerb(){
   setActive("pastSimple");
   render();
   setMessage("Puedes volver a intentarlo.");
+  focusMobileInputSoon();
 }
 function nextVerb(){
   if(!dataset.length) return;
@@ -496,6 +489,7 @@ function nextVerb(){
   setActive("pastSimple");
   render();
   setMessage("Nuevo verbo.");
+  focusMobileInputSoon();
 }
 function shuffleVerbs(){
   if(!dataset.length) return;
@@ -505,6 +499,7 @@ function shuffleVerbs(){
   setActive("pastSimple");
   render();
   setMessage("Verbos mezclados.");
+  focusMobileInputSoon();
 }
 
 function setMode(mode){
@@ -515,9 +510,10 @@ function setMode(mode){
   rebuildDataset();
   setActive("pastSimple");
   render();
-  if(mode === "tricky") setMessage("Modo Tricky letters. Toca el cuadro para escribir.");
-  if(mode === "blind") setMessage("Modo Blind: todas las letras van ocultas. Toca el cuadro para escribir.");
+  if(mode === "tricky") setMessage("Modo Tricky letters. Toca cualquier parte del juego para escribir.");
+  if(mode === "blind") setMessage("Modo Blind: todas las letras van ocultas. Toca cualquier parte del juego para escribir.");
   if(mode === "study") setMessage("Modo Estudio.");
+  if(mode !== "study") focusMobileInputSoon();
 }
 function toggleNewOnly(){
   newOnly = !newOnly;
@@ -527,6 +523,7 @@ function toggleNewOnly(){
   setActive("pastSimple");
   render();
   setMessage(newOnly ? "Solo verbos recién incorporados." : "Todos los verbos.");
+  focusMobileInputSoon();
 }
 
 function parseWorksheetRows(rows){
@@ -562,6 +559,7 @@ function importWorkbook(buf,name){
   saveCurrentDataToStorage(datasetName);
   score = {good:0,bad:0}; index = 0;
   rebuildDataset(); render(); setMessage("Excel importado correctamente y guardado para la próxima vez.");
+  focusMobileInputSoon();
 }
 function exportJson(){
   const blob = new Blob([JSON.stringify(MASTER_DATA,null,2)],{type:"application/json"});
@@ -573,10 +571,15 @@ function exportJson(){
 
 
 function focusMobileInput(){
+  if(currentMode === "study") return;
   const el = document.getElementById("mobileLetterInput");
   if(!el) return;
-  el.focus();
+  el.focus({preventScroll:true});
   try{ el.click(); }catch(err){}
+}
+
+function focusMobileInputSoon(){
+  setTimeout(()=>focusMobileInput(), 30);
 }
 
 document.getElementById("deleteBtn").addEventListener("click",deleteLast);
@@ -604,8 +607,6 @@ document.getElementById("fileInput").addEventListener("change", async e=>{
   }
 });
 
-document.getElementById("focusKeyboardBtn").addEventListener("click",focusMobileInput);
-
 document.getElementById("mobileLetterInput").addEventListener("input", e=>{
   if(currentMode === "study") { e.target.value = ""; return; }
   const value = (e.target.value || "").trim().toLowerCase();
@@ -623,6 +624,30 @@ document.getElementById("mobileLetterInput").addEventListener("keydown", e=>{
   }
 });
 
+document.getElementById("psCard").addEventListener("click", ()=>{
+  setActive("pastSimple");
+  render();
+  focusMobileInputSoon();
+});
+
+document.getElementById("ppCard").addEventListener("click", ()=>{
+  setActive("pastParticiple");
+  render();
+  focusMobileInputSoon();
+});
+
+document.getElementById("gameView").addEventListener("click", e=>{
+  const blocked = e.target.closest("button, label, input, a");
+  if(blocked) return;
+  focusMobileInputSoon();
+});
+
+document.getElementById("gameView").addEventListener("touchend", e=>{
+  const blocked = e.target.closest("button, label, input, a");
+  if(blocked) return;
+  focusMobileInputSoon();
+}, {passive:true});
+
 window.addEventListener("keydown",e=>{
   if(currentMode === "study") return;
   if(/^[a-zA-Z]$/.test(e.key)) insertLetter(e.key.toLowerCase());
@@ -632,6 +657,7 @@ window.addEventListener("keydown",e=>{
 loadSavedDataFromStorage();
 rebuildDataset();
 render();
+focusMobileInputSoon();
 </script>
 </body>
 </html>
