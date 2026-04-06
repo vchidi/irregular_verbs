@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yago - Irregular Verbs Game</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg1:#fff8e8;--bg2:#eaf7ff;--ink:#1f2a44;--muted:#667085;--blue:#4f8cff;--green:#28a745;--red:#e74c3c;--yellow:#ffcc4d;--shadow:0 12px 30px rgba(31,42,68,.12)}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--bg1),var(--bg2));min-height:100vh}
+.wrap{max-width:1160px;margin:0 auto;padding:20px}
+.hero,.card{background:rgba(255,255,255,.94);border-radius:28px;box-shadow:var(--shadow)}
+.hero{padding:18px 22px}.card{padding:22px}
+.grid{margin-top:18px;display:grid;grid-template-columns:1.18fr .82fr;gap:18px}
+.title{margin:0;font-size:clamp(26px,3vw,38px);font-weight:800}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.stat{background:#fff;border-radius:16px;padding:8px 12px;box-shadow:inset 0 0 0 2px rgba(79,140,255,.08);min-width:110px}
+.label{font-size:11px;color:var(--muted)} .value{font-size:18px;font-weight:800;margin-top:3px;line-height:1.1}
+button,.file-label{border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.secondary{background:#fff;color:var(--ink);box-shadow:var(--shadow)}.warn{background:#ffe8cf;color:#8a4b00}.danger{background:#ffe0dc;color:#8f2d22}.success{background:#dff7e7;color:#126b2d}
+.small-btn,.small-file{padding:7px 11px;font-size:12px} input[type=file]{display:none}
+.mode-buttons,.play-buttons{display:flex;flex-wrap:wrap;gap:12px}
+.mode-wrap{margin-top:16px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.mode-btn.active,.filter-btn.active{outline:3px solid rgba(79,140,255,.25)}
+.base{text-align:center;margin-bottom:18px}.base .word{font-size:clamp(34px,6vw,56px);font-weight:900;margin-top:8px}
+.prompt{border-radius:22px;padding:16px;margin-bottom:14px;border:3px solid transparent;background:#f7fbff}
+.prompt.active{border-color:var(--blue)}.prompt.good{background:#e9f9ef;border-color:#8ad4a0}.prompt.bad{background:#fff0ed;border-color:#f2a39a}
+.row-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+.row-title{font-size:18px;font-weight:800}.status-pill{font-size:13px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#475467;min-width:92px;text-align:center}
+.letters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.char{width:42px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;background:#fff;box-shadow:inset 0 0 0 2px #e6ebf5}
+.char.fixed{background:#f9fafb;color:#344054}.char.blank{background:#fffdf3;border:3px dashed #f3cf62;box-shadow:none}.char.blank.filled{background:#fff;border:3px solid #7ec8ff}.char.slash{width:20px;background:transparent;box-shadow:none}
+.message{min-height:70px;border-radius:20px;padding:14px 16px;background:#fffdf2;color:#694d00;font-weight:700;line-height:1.35;margin-top:14px}
+.bottom-tools{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.help{margin-top:14px;color:var(--muted);font-size:11px;line-height:1.3}
+.keyboard-title{font-size:16px;font-weight:800;margin:0 0 10px}.kb-group{margin-bottom:16px}.kb-label{font-size:14px;font-weight:800;color:var(--muted);margin:0 0 8px}
+.keyboard{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.key{padding:14px 0;border-radius:18px;font-size:24px;font-weight:900;background:#fff;box-shadow:inset 0 0 0 2px #dbe5f3}
+.tiny{font-size:13px;color:var(--muted)}
+.study-card{background:#fffdf7;border:2px solid #f0ead7;border-radius:24px;padding:18px}
+.study-top-forms{font-family:"Courier New",monospace;font-size:34px;font-weight:900;text-align:center;background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;line-height:1.35}
+.study-visual{font-size:26px;font-weight:900;text-align:center;margin:14px 0;padding:14px;background:#f7fbff;border-radius:18px}
+.study-hint{font-size:18px;line-height:1.45;background:#fff;border-radius:18px;padding:16px}
+.study-stack{margin-top:14px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.study-word{font-family:"Courier New",monospace;font-size:30px;font-weight:900;background:#fff;border-radius:18px;padding:12px 16px;box-shadow:inset 0 0 0 2px #eef2ff;white-space:pre}
+.red{color:var(--red)}.green{color:var(--green)}
+.study-note{margin-top:14px;font-size:13px;color:var(--muted)}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.keyboard{grid-template-columns:repeat(5,1fr)}.mode-wrap{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+  <h1 class="title">Irregular Verbs Game for Yago</h1>
+  <div class="stats">
+    <div class="stat"><div class="label">Aciertos</div><div class="value" id="scoreGood">0</div></div>
+    <div class="stat"><div class="label">Errores</div><div class="value" id="scoreBad">0</div></div>
+    <div class="stat"><div class="label">Verbo</div><div class="value"><span id="currentIndex">1</span>/<span id="totalCount">0</span></div></div>
+    <div class="stat"><div class="label">Conjunto cargado</div><div class="value" style="font-size:14px" id="datasetName">Inicial</div></div>
+  </div>
+  <div class="mode-wrap">
+    <div class="mode-buttons">
+      <button class="primary mode-btn active" id="modeTrickyBtn">Tricky letters</button>
+      <button class="warn mode-btn" id="modeBlindBtn">Blind</button>
+      <button class="success mode-btn" id="modeStudyBtn">Estudio</button>
+      <button class="secondary filter-btn" id="newOnlyBtn">Recién incorporadas</button>
+    </div>
+
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <div class="play-buttons" style="margin-bottom:18px">
+        <button class="success" id="revealBtn">Solución</button>
+        <button class="secondary" id="nextBtn">Siguiente</button>
+        <button class="danger" id="tryAgainBtn">Intentar otra vez</button>
+        <button class="primary" id="shuffleBtn">Mezclar verbos</button>
+      </div>
+
+      <div id="gameView">
+      <div class="base"><div class="label">Base form</div><div class="word" id="baseWord">write</div></div>
+
+      <div class="prompt active" id="psCard">
+        <div class="row-top"><div class="row-title">Past simple</div><div class="status-pill" id="psStatus">Pendiente</div></div>
+        <div class="letters" id="psLetters"></div>
+      </div>
+
+      <div class="prompt" id="ppCard">
+        <div class="row-top"><div class="row-title">Past participle</div><div class="status-pill" id="ppStatus">Pendiente</div></div>
+        <div class="letters" id="ppLetters"></div>
+      </div>
+
+      <div class="message" id="messageBox">Pulsa las letras que faltan.</div>
+
+      <div class="bottom-tools">
+        <button class="secondary" id="deleteBtn">Borrar última</button>
+        <button class="secondary" id="restartVerbBtn">Reiniciar verbo</button>
+        <label class="file-label secondary small-file">Importar Excel<input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.json" /></label>
+        <button class="secondary small-btn" id="exportJsonBtn">Exportar</button>
+      </div>
+
+      <div class="help">
+        Edita los verbos en el Excel e impórtalo aquí. El navegador recordará el último Excel importado en este dispositivo. Usa las columnas <strong>baseForm, pastSimple, pastSimplePattern, pastParticiple, pastParticiplePattern, studyVisual, studyHint, psHighlight, ppHighlight, isNew</strong>.
+      </div>
+    </div>
+
+    <div id="studyView" style="display:none">
+      <div class="base"><div class="label">Estudio</div><div class="word" id="studyBaseWord">write</div></div>
+      <div class="study-card">
+        <div class="study-top-forms" id="studyTopForms"></div>
+        <div class="study-visual" id="studyVisual">i → a → i+n</div>
+        <div class="study-hint" id="studyHint">Aquí aparecerá una ayuda visual para estudiar el verbo.</div>
+        <div class="study-stack">
+          <div class="study-word" id="studyBaseAligned"></div>
+          <div class="study-word" id="studyPSAligned"></div>
+          <div class="study-word" id="studyPPAligned"></div>
+        </div>
+        <div class="study-note">Para añadir tus propias ayudas tipo “imagen mental”, escribe el texto en las columnas <strong>studyHint</strong> y <strong>studyVisual</strong> del Excel.</div>
+      </div>
+    </div>
+  </div>
+
+  </section>
+</div>
+
+<script>
+const MASTER_DATA = [{"baseForm": "write", "pastSimple": "wrote", "pastSimplePattern": "wr_te", "pastParticiple": "written", "pastParticiplePattern": "writt_e_", "studyHint": "Piensa en WRITE con la i atrapada. La i cambia a o en wrote, y en written vuelve el sonido i y aparecen dos t + en.", "studyVisual": "i → o → i+n", "psHighlight": "o", "ppHighlight": "en", "isNew": "yes"}, {"baseForm": "give", "pastSimple": "gave", "pastSimplePattern": "g_ve", "pastParticiple": "given", "pastParticiplePattern": "give_", "studyHint": "En GIVE, la i salta a una a en gave. Después vuelve la i en given y se añade -n.", "studyVisual": "i → a → i+n", "psHighlight": "a", "ppHighlight": "n", "isNew": "yes"}, {"baseForm": "see", "pastSimple": "saw", "pastSimplePattern": "saw", "pastParticiple": "seen", "pastParticiplePattern": "see_", "studyHint": "SEE se abre mucho y aparece una a en saw. Luego vuelve el ee largo y se pega una n: seen.", "studyVisual": "ee → aw → ee+n", "psHighlight": "aw", "ppHighlight": "n", "isNew": "yes"}, {"baseForm": "break", "pastSimple": "broke", "pastSimplePattern": "broke", "pastParticiple": "broken", "pastParticiplePattern": "______", "studyHint": "BREAK se rompe: ea cambia a o en broke. Luego a broke se le añade -n para formar broken.", "studyVisual": "ea → o → o+n", "psHighlight": "o", "ppHighlight": "on", "isNew": "yes"}, {"baseForm": "be", "pastSimple": "was/were", "pastSimplePattern": "was/were", "pastParticiple": "been", "pastParticiplePattern": "be__", "studyHint": "BE es especial: en pasado puede ser was o were. En participio se queda been, con bee + n.", "studyVisual": "be → was/were → bee+n", "psHighlight": "was/were", "ppHighlight": "en", "isNew": "yes"}, {"baseForm": "eat", "pastSimple": "ate", "pastSimplePattern": "ate", "pastParticiple": "eaten", "pastParticiplePattern": "eat__", "studyHint": "EAT pierde la e inicial larga y queda ate. Luego vuelve eat y se añade -en: eaten.", "studyVisual": "eat → ate → eat+en", "psHighlight": "a", "ppHighlight": "en", "isNew": "no"}, {"baseForm": "drink", "pastSimple": "drank", "pastSimplePattern": "dr_nk", "pastParticiple": "drunk", "pastParticiplePattern": "dr_nk", "studyHint": "DRINK cambia i por a en drank. Después la a se convierte en u en drunk.", "studyVisual": "i → a → u", "psHighlight": "a", "ppHighlight": "u", "isNew": "no"}];
+let dataset = [...MASTER_DATA];
+let datasetName = "Inicial";
+let index = 0;
+let activeTarget = "pastSimple";
+let score = {good:0,bad:0};
+let currentMode = "tricky";
+
+const STORAGE_KEY = "yago_irregular_verbs_saved_data_v1";
+const STORAGE_NAME_KEY = "yago_irregular_verbs_saved_name_v1";
+
+function saveCurrentDataToStorage(name){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(MASTER_DATA));
+    localStorage.setItem(STORAGE_NAME_KEY, name || "Excel guardado");
+  }catch(err){}
+}
+
+function loadSavedDataFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed) || !parsed.length) return false;
+    MASTER_DATA.length = 0;
+    parsed.forEach(x => MASTER_DATA.push(x));
+    datasetName = localStorage.getItem(STORAGE_NAME_KEY) || "Excel guardado";
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+let newOnly = false;
+
+function normalizePattern(answer, pattern){
+  let p = String(pattern || answer || "").trim();
+  const a = String(answer || "").trim();
+  if(!a) return p;
+  if(!p) return a;
+  if(p.length > a.length) p = p.slice(0, a.length);
+  if(p.length < a.length) p = p + a.slice(p.length);
+  return p;
+}
+
+function sanitizeEntry(e){
+  const c = {
+    baseForm:String(e.baseForm||"").trim(),
+    pastSimple:String(e.pastSimple||"").trim(),
+    pastSimplePattern:String(e.pastSimplePattern||e.pastSimple||"").trim(),
+    pastParticiple:String(e.pastParticiple||"").trim(),
+    pastParticiplePattern:String(e.pastParticiplePattern||e.pastParticiple||"").trim(),
+    studyVisual:String(e.studyVisual||"").trim(),
+    studyHint:String(e.studyHint||"").trim(),
+    psHighlight:String(e.psHighlight||"").trim(),
+    ppHighlight:String(e.ppHighlight||"").trim(),
+    isNew:String(e.isNew||"").trim().toLowerCase()
+  };
+  if(!c.baseForm || !c.pastSimple || !c.pastParticiple) return null;
+  c.pastSimplePattern = normalizePattern(c.pastSimple, c.pastSimplePattern);
+  c.pastParticiplePattern = normalizePattern(c.pastParticiple, c.pastParticiplePattern);
+  return c;
+}
+
+function filteredData(){
+  let base = MASTER_DATA.map(sanitizeEntry).filter(Boolean);
+  if(newOnly) base = base.filter(x => ["yes","sí","si","1","true","x"].includes(x.isNew));
+  return base;
+}
+
+function getPatternForMode(item,key){
+  if(currentMode === "blind"){
+    return item[key].split("").map(ch => ch === "/" ? "/" : "_").join("");
+  }
+  return key === "pastSimple" ? item.pastSimplePattern : item.pastParticiplePattern;
+}
+
+function makeState(answer,pattern){
+  return {answer,pattern,guessed:Array.from(pattern).map(ch => ch === "_" ? "" : ch),ok:null};
+}
+
+function rebuildDataset(){
+  dataset = filteredData();
+  if(index >= dataset.length) index = 0;
+  dataset.forEach(item => {
+    item.state = {
+      pastSimple: makeState(item.pastSimple, getPatternForMode(item,"pastSimple")),
+      pastParticiple: makeState(item.pastParticiple, getPatternForMode(item,"pastParticiple"))
+    };
+    item.meta = {finished:false,revealed:false,pastSimple_scored:false,pastParticiple_scored:false};
+  });
+}
+
+function currentItem(){ return dataset[index]; }
+function nextBlankIndex(state){ return state.pattern.split("").findIndex((ch,i)=> ch === "_" && (!state.guessed[i] || state.guessed[i] === "_")); }
+function hasAnyBlankLeft(state){ return nextBlankIndex(state) !== -1; }
+function lastFilledBlankIndex(state){ for(let i=state.guessed.length-1;i>=0;i--){ if(state.pattern[i] === "_" && state.guessed[i]) return i; } return -1; }
+function isComplete(state){ return state.pattern.split("").every((ch,i)=> ch !== "_" || !!state.guessed[i]); }
+function reconstruct(state){ return state.answer.split("").map((ch,i)=> state.pattern[i] === "_" ? (state.guessed[i] || "") : ch).join(""); }
+
+function getDisplayChars(state){
+  return state.answer.split("").map((ch,i)=>{
+    if(ch === "/") return {type:"slash",value:"/"};
+    if(state.pattern[i] === "_") return {type:state.guessed[i] ? "filled" : "blank", value: state.guessed[i] || "_"};
+    return {type:"fixed",value:ch};
+  });
+}
+function renderWord(container,state){
+  container.innerHTML = "";
+  getDisplayChars(state).forEach(it=>{
+    const d = document.createElement("div");
+    d.className = "char " + (it.type === "filled" ? "blank filled" : it.type);
+    d.textContent = it.value;
+    container.appendChild(d);
+  });
+}
+
+function uniqueSortedLetters(list){ return [...new Set(list.map(x=>x.toLowerCase()).filter(x=>/^[a-z]$/.test(x)))].sort(); }
+function renderKeyboardLine(container,letters){
+  container.innerHTML = "";
+  letters.forEach(letter=>{
+    const b = document.createElement("button");
+    b.className = "key";
+    b.textContent = letter;
+    b.addEventListener("click",()=>insertLetter(letter));
+    container.appendChild(b);
+  });
+}
+function buildKeyboard(){
+  if(!dataset.length) return;
+  const item = currentItem();
+  const req = [];
+  ["pastSimple","pastParticiple"].forEach(k=>{
+    const st = item.state[k];
+    st.answer.split("").forEach((ch,i)=>{ if(st.pattern[i] === "_" && ch !== "/") req.push(ch.toLowerCase()); });
+  });
+  const vowels = uniqueSortedLetters(["a","e","i","o","u",...req.filter(l=>"aeiou".includes(l))]);
+  const cons = uniqueSortedLetters([..."bcdfghjklmnpqrstvwxyz",...req.filter(l=>!"aeiou".includes(l))]);
+  renderKeyboardLine(document.getElementById("vowelKeyboard"), vowels);
+  renderKeyboardLine(document.getElementById("consonantKeyboard"), cons);
+}
+
+function updateStats(){
+  document.getElementById("scoreGood").textContent = score.good;
+  document.getElementById("scoreBad").textContent = score.bad;
+  document.getElementById("currentIndex").textContent = dataset.length ? index + 1 : 0;
+  document.getElementById("totalCount").textContent = dataset.length;
+  document.getElementById("datasetName").textContent = newOnly ? "Recién incorporadas" : "Todos";
+}
+function setMessage(msg){ document.getElementById("messageBox").textContent = msg; }
+function setActive(t){
+  activeTarget = t;
+  document.getElementById("psCard").classList.toggle("active", t === "pastSimple");
+  document.getElementById("ppCard").classList.toggle("active", t === "pastParticiple");
+}
+
+function renderStatuses(){
+  if(!dataset.length) return;
+  const item = currentItem();
+  ["pastSimple","pastParticiple"].forEach(k=>{
+    const card = document.getElementById(k==="pastSimple"?"psCard":"ppCard");
+    const status = document.getElementById(k==="pastSimple"?"psStatus":"ppStatus");
+    const st = item.state[k];
+    card.classList.remove("good","bad");
+    if(st.ok === true){ card.classList.add("good"); status.textContent = "✅ Bien"; }
+    else if(st.ok === false){ card.classList.add("bad"); status.textContent = "❌ Mal"; }
+    else { status.textContent = "Pendiente"; }
+  });
+}
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function highlightWithCustom(word, token, cls){
+  if(!token) return esc(word);
+  const i = word.toLowerCase().indexOf(token.toLowerCase());
+  if(i === -1) return esc(word);
+  const a = word.slice(0,i), b = word.slice(i,i+token.length), c = word.slice(i+token.length);
+  return `${esc(a)}<span class="${cls}">${esc(b)}</span>${esc(c)}`;
+}
+function renderStudy(){
+  if(!dataset.length) return;
+  const item = currentItem();
+  document.getElementById("studyBaseWord").textContent = item.baseForm;
+  document.getElementById("studyTopForms").innerHTML =
+    `${esc(item.baseForm)}&nbsp;&nbsp;${highlightWithCustom(item.pastSimple, item.psHighlight, "red")}&nbsp;&nbsp;${highlightWithCustom(item.pastParticiple, item.ppHighlight, "green")}`;
+  document.getElementById("studyVisual").textContent = item.studyVisual || `${item.baseForm} → ${item.pastSimple} → ${item.pastParticiple}`;
+  document.getElementById("studyHint").textContent = item.studyHint || "Añade tu propia ayuda visual en la columna studyHint del Excel.";
+  document.getElementById("studyBaseAligned").innerHTML = esc(item.baseForm);
+  document.getElementById("studyPSAligned").innerHTML = highlightWithCustom(item.pastSimple, item.psHighlight, "red");
+  document.getElementById("studyPPAligned").innerHTML = highlightWithCustom(item.pastParticiple, item.ppHighlight, "green");
+}
+
+function render(){
+  if(!dataset.length){
+    document.getElementById("baseWord").textContent = "Sin datos";
+    document.getElementById("psLetters").innerHTML = "";
+    document.getElementById("ppLetters").innerHTML = "";
+    document.getElementById("gameView").style.display = currentMode === "study" ? "none" : "block";
+    document.getElementById("studyView").style.display = currentMode === "study" ? "block" : "none";
+    document.getElementById("keyboardPanel").style.display = currentMode === "study" ? "none" : "block";
+    updateStats();
+    return;
+  }
+  const item = currentItem();
+  document.getElementById("baseWord").textContent = item.baseForm;
+  renderWord(document.getElementById("psLetters"), item.state.pastSimple);
+  renderWord(document.getElementById("ppLetters"), item.state.pastParticiple);
+  renderStatuses();
+  
+  renderStudy();
+  updateStats();
+  const study = currentMode === "study";
+  document.getElementById("gameView").style.display = study ? "none" : "block";
+  document.getElementById("studyView").style.display = study ? "block" : "none";
+  
+}
+
+function scoreStateIfNeeded(item,key,ok){
+  const mk = key + "_scored";
+  if(item.meta[mk] || currentMode === "study") return;
+  if(ok) score.good++; else score.bad++;
+  item.meta[mk] = true;
+}
+function evaluateOne(key){
+  const item = currentItem();
+  const st = item.state[key];
+  if(!isComplete(st)) return;
+  const ok = reconstruct(st).toLowerCase() === item[key].toLowerCase();
+  st.ok = ok;
+  scoreStateIfNeeded(item,key,ok);
+  if(ok){
+    setMessage("✅ Bien.");
+    const other = key === "pastSimple" ? "pastParticiple" : "pastSimple";
+    if(item.state[other].ok === null) setActive(other);
+  } else {
+    setMessage("❌ Algo no está bien. Puedes intentarlo otra vez o pulsar Solución.");
+    item.meta.finished = true;
+  }
+  render();
+}
+
+function insertLetter(letter){
+  if(currentMode === "study" || !dataset.length) return;
+  const item = currentItem();
+
+  if(item.meta.finished && !(item.state.pastSimple.ok === true && item.state.pastParticiple.ok === true)){
+    setMessage("Pulsa 'Intentar otra vez' o 'Solución'.");
+    return;
+  }
+
+  let target = activeTarget;
+  let st = item.state[target];
+  let idx = nextBlankIndex(st);
+
+  if(idx === -1){
+    const other = target === "pastSimple" ? "pastParticiple" : "pastSimple";
+    const os = item.state[other];
+    const oi = nextBlankIndex(os);
+    if(oi === -1) return;
+    target = other;
+    st = os;
+    idx = oi;
+    setActive(target);
+  }
+
+  st.guessed[idx] = letter;
+
+  const completedNow = st.pattern.split("").every((ch, i) => ch !== "_" || (st.guessed[i] && st.guessed[i] !== "_"));
+
+  if(completedNow){
+    const guess = st.answer.split("").map((ch, i) => st.pattern[i] === "_" ? (st.guessed[i] || "") : ch).join("").toLowerCase();
+    const answer = String(item[target] || "").toLowerCase();
+    const ok = guess === answer;
+
+    st.ok = ok;
+    scoreStateIfNeeded(item, target, ok);
+
+    if(ok){
+      setMessage("✅ Bien.");
+      const other = target === "pastSimple" ? "pastParticiple" : "pastSimple";
+      if(item.state[other].ok === null){
+        setActive(other);
+      }
+      if(item.state.pastSimple.ok === true && item.state.pastParticiple.ok === true){
+        item.meta.finished = true;
+      }
+    } else {
+      item.meta.finished = true;
+      setMessage("❌ Algo no está bien. Puedes intentarlo otra vez o pulsar Solución.");
+    }
+  }
+
+  render();
+}
+function deleteLast(){
+  if(currentMode === "study" || !dataset.length) return;
+  const item = currentItem();
+  for(const t of [activeTarget, activeTarget === "pastSimple" ? "pastParticiple" : "pastSimple"]){
+    const st = item.state[t];
+    const idx = lastFilledBlankIndex(st);
+    if(idx !== -1){
+      st.guessed[idx] = "";
+      st.ok = null;
+      item.meta.finished = false;
+      item.meta.revealed = false;
+      item.meta[t+"_scored"] = false;
+      setActive(t);
+      render();
+      setMessage("Última letra borrada.");
+      return;
+    }
+  }
+  setMessage("No hay letras para borrar.");
+}
+function resetItemProgress(item){
+  item.state = {
+    pastSimple: makeState(item.pastSimple, getPatternForMode(item,"pastSimple")),
+    pastParticiple: makeState(item.pastParticiple, getPatternForMode(item,"pastParticiple"))
+  };
+  item.meta = {finished:false,revealed:false,pastSimple_scored:false,pastParticiple_scored:false};
+}
+function reveal(){
+  if(currentMode === "study" || !dataset.length) return;
+  const item = currentItem();
+  ["pastSimple","pastParticiple"].forEach(k=>{
+    const st = item.state[k];
+    st.answer.split("").forEach((ch,i)=>{ if(st.pattern[i] === "_") st.guessed[i] = ch; });
+    st.ok = true;
+  });
+  item.meta.finished = true;
+  item.meta.revealed = true;
+  render();
+  setMessage("Solución mostrada.");
+}
+function restartVerb(){
+  if(currentMode === "study" || !dataset.length) return;
+  const item = currentItem();
+  resetItemProgress(item);
+  setActive("pastSimple");
+  render();
+  setMessage("Puedes volver a intentarlo.");
+}
+function nextVerb(){
+  if(!dataset.length) return;
+  index = (index + 1) % dataset.length;
+  resetItemProgress(currentItem());
+  setActive("pastSimple");
+  render();
+  setMessage("Nuevo verbo.");
+}
+function shuffleVerbs(){
+  if(!dataset.length) return;
+  dataset = dataset.sort(()=>Math.random()-0.5);
+  dataset.forEach(item => resetItemProgress(item));
+  index = 0;
+  setActive("pastSimple");
+  render();
+  setMessage("Verbos mezclados.");
+}
+
+function setMode(mode){
+  currentMode = mode;
+  document.getElementById("modeTrickyBtn").classList.toggle("active", mode === "tricky");
+  document.getElementById("modeBlindBtn").classList.toggle("active", mode === "blind");
+  document.getElementById("modeStudyBtn").classList.toggle("active", mode === "study");
+  rebuildDataset();
+  setActive("pastSimple");
+  render();
+  if(mode === "tricky") setMessage("Modo Tricky letters.");
+  if(mode === "blind") setMessage("Modo Blind: todas las letras van ocultas.");
+  if(mode === "study") setMessage("Modo Estudio.");
+}
+function toggleNewOnly(){
+  newOnly = !newOnly;
+  document.getElementById("newOnlyBtn").classList.toggle("active", newOnly);
+  rebuildDataset();
+  index = 0;
+  setActive("pastSimple");
+  render();
+  setMessage(newOnly ? "Solo verbos recién incorporados." : "Todos los verbos.");
+}
+
+function parseWorksheetRows(rows){
+  if(!rows.length) return [];
+  const headers = rows[0].map(v=>String(v||"").trim());
+  const needed = ["baseForm","pastSimple","pastSimplePattern","pastParticiple","pastParticiplePattern"];
+  if(!needed.every(h=>headers.includes(h))) return [];
+  return rows.slice(1).map(r=>{
+    const o = {};
+    headers.forEach((h,i)=> o[h] = r[i]);
+    return sanitizeEntry(o);
+  }).filter(Boolean);
+}
+function importJsonText(text,name){
+  const parsed = JSON.parse(text);
+  const rows = Array.isArray(parsed) ? parsed.map(sanitizeEntry).filter(Boolean) : [];
+  if(!rows.length) throw new Error("El archivo no tiene verbos válidos.");
+  for(let i=0;i<MASTER_DATA.length;i++) MASTER_DATA[i] = rows[i] || MASTER_DATA[i];
+  while(MASTER_DATA.length > rows.length) MASTER_DATA.pop();
+  datasetName = name || "JSON";
+  saveCurrentDataToStorage(datasetName);
+  score = {good:0,bad:0}; index = 0;
+  rebuildDataset(); render(); setMessage("Datos importados correctamente y guardados para la próxima vez.");
+}
+function importWorkbook(buf,name){
+  const wb = XLSX.read(buf,{type:"array"});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false,defval:""});
+  const parsed = parseWorksheetRows(rows);
+  if(!parsed.length) throw new Error("No he encontrado el formato esperado en el Excel.");
+  MASTER_DATA.length = 0; parsed.forEach(x=>MASTER_DATA.push(x));
+  datasetName = name || "Excel";
+  saveCurrentDataToStorage(datasetName);
+  score = {good:0,bad:0}; index = 0;
+  rebuildDataset(); render(); setMessage("Excel importado correctamente y guardado para la próxima vez.");
+}
+function exportJson(){
+  const blob = new Blob([JSON.stringify(MASTER_DATA,null,2)],{type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "irregular_verbs_data.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("deleteBtn").addEventListener("click",deleteLast);
+document.getElementById("restartVerbBtn").addEventListener("click",restartVerb);
+document.getElementById("revealBtn").addEventListener("click",reveal);
+document.getElementById("nextBtn").addEventListener("click",nextVerb);
+document.getElementById("tryAgainBtn").addEventListener("click",restartVerb);
+document.getElementById("shuffleBtn").addEventListener("click",shuffleVerbs);
+document.getElementById("exportJsonBtn").addEventListener("click",exportJson);
+document.getElementById("modeTrickyBtn").addEventListener("click",()=>setMode("tricky"));
+document.getElementById("modeBlindBtn").addEventListener("click",()=>setMode("blind"));
+document.getElementById("modeStudyBtn").addEventListener("click",()=>setMode("study"));
+document.getElementById("newOnlyBtn").addEventListener("click",toggleNewOnly);
+
+document.getElementById("fileInput").addEventListener("change", async e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    if(file.name.toLowerCase().endsWith(".json")) importJsonText(await file.text(), file.name);
+    else importWorkbook(await file.arrayBuffer(), file.name);
+  }catch(err){
+    setMessage("Error al importar: " + err.message);
+  }finally{
+    e.target.value = "";
+  }
+});
+window.addEventListener("keydown",e=>{
+  if(currentMode === "study") return;
+  if(/^[a-zA-Z]$/.test(e.key)) insertLetter(e.key.toLowerCase());
+  else if(e.key === "Backspace") deleteLast();
+});
+
+loadSavedDataFromStorage();
+rebuildDataset();
+render();
+</script>
+</body>
+</html>
